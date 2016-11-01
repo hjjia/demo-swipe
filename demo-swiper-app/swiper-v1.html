@@ -23,6 +23,8 @@
 		}
 
 		#canvas {
+			position: relative;
+
 			width: 100%;
 			height: 100%;
 
@@ -138,6 +140,36 @@
 			box-sizing: content-box;
 		}
 
+		.swipe-pagination {
+			position: absolute;
+
+			bottom: 10px;
+			right: 0;
+			left: 0;
+
+			text-align: center;
+
+			border: 1px solid red;
+		}
+
+		.swipe-pagination-item {
+			display: inline-block;
+			vertical-align: middle;
+
+			width: 10px;
+			height: 10px;
+
+			border-radius: 50%;
+
+			margin: 0 5px;
+
+			background-color: #fff;
+			opacity: 0.6;
+		}
+
+		.swipe-pagination-item.active {
+			opacity: 1;
+		}
 	</style>
 </head>
 <body>
@@ -161,6 +193,7 @@
 				</div>
 			</li>
 		</ul>
+		<div class="swipe-pagination"></div>
 	</div>
 
 	
@@ -201,27 +234,211 @@
 
 		// create controductor function
 		function Slider(opts) {
-			this.wrap = opts.dom;
-			this.list = opts.list;
-			this.type = opts.type || 1;
+			this.wrap       = opts.dom;
+			this.list       = opts.list;
+			this.type       = opts.type || 1;
+			this.pagination = opts.pagination;
+			this.loop       = opts.loop;
+			this.seconds    = opts.seconds || 1000;
 
-			// 
+			// initialize some variables
 			this.init();
-			this.rederDOM();
+
+			// render DOM Tree
+			this.renderDOM();
+
+			// all logic methods and shift slide functions
 			this.bindDOM();
 
 		}
 
+		/**
+		 * initialize some variables
+		 */
 		Slider.prototype.init = function () {
-			// jisuan chuangkou chang/kuan radio
+			// calculate the radio of the view
 			this.radio = window.innerHeight / window.innerWidth;
 
-			// gundong de  juli
+			// the width of every slide
 			this.scaleW = window.innerWidth;
 
-			// dangqian tupian de suoyin
+			// the index of the current swipe-item
 			this.idx = 0; 
 
+		};
+
+		/**
+		 * render DOM Tree
+		 * this.type = 1: render swipe HTML dynamic
+		 * this.type = 2: swipe HTML has been existed
+		 */
+		Slider.prototype.renderDOM = function () {
+
+			var $wrap = this.wrap,
+				data  = this.list,
+				len   = data.length,
+				scale = this.scaleW;
+
+			switch (this.type) {
+				case 1:
+						this._renderCreateDOM(data);
+					break;
+				case 2 :
+				default:
+					this.outer = $wrap.getElementsByClassName('swipe-wrapper')[0];
+			}
+
+			// create paiginations
+			if(this.pagination) {
+				this._createPagination(this.pagination);
+			}
+		};
+
+		/**
+		 * all logic methods and shift slide functions
+		 */
+		Slider.prototype.bindDOM = function () {
+			var $this  = this,
+				data   = $this.list,
+				len    = data.length,
+				scale  = $this.scaleW,
+				$outer = $this.outer,
+				lis    = $outer.getElementsByClassName('swipe-item');
+
+			// if loop
+			$this.loop && ($this.setLoop());
+
+			var startHandler = function (evt) {
+
+				// 记录当前手指的位移
+				$this.startX = evt.touches[0].pageX;
+				$this.startY = evt.touches[0].pageY;
+
+				$this.offsetX = 0;
+
+				$this.startTime = new Date() * 1;
+			};
+
+			var moveHandler = function (evt) {
+				evt.preventDefault(); // 阻止浏览器的默认事件 如果 切换到下一页
+
+				$this.offsetX = evt.touches[0].pageX - $this.startX;
+
+				$outer.style.webkitTransform = 'translate3d(' + (-$this.idx * scale + $this.offsetX) + 'px, 0, 0)';
+				$outer.style.webkitTransition = 'none';
+
+			};
+
+			var endHandler = function (evt) {
+
+				// 判断是否切换
+				var boundary = scale / 6,
+					endTime  = new Date() * 1;
+
+				// slide quickly
+				if(endTime - $this.startTime < 250) {
+					if($this.offsetX > 50) {
+						$this.go('-1', 'prev');
+					}
+					else if($this.offsetX < -50) {
+						$this.go('+1', 'next');
+					}
+					else {
+						$this.go('0', 'current');
+					}
+				}
+				else {
+					if($this.offsetX >= boundary) {
+
+						// prev
+						$this.go('-1', 'prev');
+
+					}
+					else if ($this.offsetX < -boundary) {
+
+						// next
+						$this.go('+1', 'next');
+					}
+					else {
+
+						// current
+						$this.go('0', 'current');
+					}
+				}
+
+			};
+
+			$outer.addEventListener('touchstart', startHandler);
+			$outer.addEventListener('touchmove', moveHandler);
+			$outer.addEventListener('touchend', endHandler);
+		};
+
+		Slider.prototype.go = function (num, type) {
+			var self        = this,
+				outer       = self.outer,
+				lis         = outer.getElementsByClassName('swipe-item'),
+				len         = lis.length,
+				idx         = self.idx,
+				cidx        = 0,
+				scale       = self.scaleW,
+				direction   = type && self.getDirection(type) * 1,
+				moveOffsetX = 0,
+				$pagination,
+				i           = 0;
+
+			self.pagination && ($pagination = self.wrap.getElementsByClassName(self.pagination)[0].getElementsByClassName('swipe-pagination-item'));
+
+			// 根据num判断是上一页、下一页、当前
+			// 如果是数字，就直接跳到第num页
+			if(typeof num == 'number') {
+				cidx = idx;
+			}
+			else if(typeof num == 'string') {
+				cidx = idx + num * 1;
+			}
+
+			// 判断是否溢出
+			if (cidx < 0) {
+				cidx = 0;
+			}
+			else if (cidx > len - 1) {
+				cidx = len - 1;
+			}
+
+			moveOffsetX = -self.idx * scale;
+
+			self.idx = cidx;
+
+			outer.style.webkitTransition = '-webkit-transform 0.2s ease-out';
+			outer.style.webkitTransform = 'translate3d(' + (-self.idx * scale) + 'px, 0, 0)';
+
+			//
+			for(i = 0; i < $pagination.length; i ++ ) {
+				$pagination[i].className = 'swipe-pagination-item';
+				$pagination[cidx].className = 'swipe-pagination-item active';
+			}
+		};
+
+		Slider.prototype._setDomPosition = function () {
+
+		};
+
+		Slider.prototype.getDirection = function (type) {
+			var direction = 0;
+
+			switch (type) {
+				case 'prev':
+					direction = +1;
+					break;
+				case 'next':
+					direction = -1;
+					break;
+				case 'current':
+					direction = 1;
+					break;
+			}
+
+			return direction;
 		};
 
 		Slider.prototype._renderCreateDOM = function (imgArr) {
@@ -257,163 +474,55 @@
 			wrap.appendChild(this.outer);
 		};
 
-		// sheng cheng html
-		Slider.prototype.rederDOM = function () {
-			// 
-			var wrap  = this.wrap;
-			var data  = this.list;
-			var len   = data.length;
-			var scale = this.scaleW;
+		Slider.prototype._createPagination = function (pagination) {
+			var self        = this,
+				outer       = self.outer,
+				lis         = outer.getElementsByClassName('swipe-item'),
+				len         = lis.length,
+				$pagination = self.wrap.getElementsByClassName(pagination)[0],
+				i           = 0;
 
-			switch (this.type) {
-				case 1:
-						this._renderCreateDOM(data);
-					break;
-				case 2 :
-				default:
-					this.outer = wrap.getElementsByClassName('swipe-wrapper');
+			for(i = 0; i < len; i ++) {
+				var bullet = document.createElement('span');
+
+				bullet.className = 'swipe-pagination-item';
+				bullet.setAttribute('data-slide-index',i);
+
+				i == 0 && (bullet.className = 'swipe-pagination-item active');
+				$pagination.appendChild(bullet);
 			}
 		};
 
-		Slider.prototype._setDomPosition = function () {
+		Slider.prototype.setLoop = function () {
+			var $this   = this,
+				seconds = $this.seconds,
+				len     = $this.outer.getElementsByClassName('swipe-item').length,
+				isFirst = true;
 
-		};
+			setInterval(function () {
+				$this.go($this.idx);
 
-		Slider.prototype.bindDOM = function () {
-			var self = this;
-			var data = self.list;
-			var len = data.length;
-			var scale = self.scaleW;
-			var outer = self.outer[0];
-
-
-			var lis = outer.getElementsByClassName('swipe-item');
-
-			var startHandler = function (evt) {
-
-				// 记录当前手指的位移
-				self.startX = evt.touches[0].pageX;
-				self.startY = evt.touches[0].pageY;
-
-				self.offsetX = 0;
-
-				self.startTime = new Date() * 1;
-			};
-
-			var moveHandler = function (evt) {
-				evt.preventDefault(); // 阻止浏览器的默认事件 如果 切换到下一页
-
-				self.offsetX = evt.touches[0].pageX - self.startX;
-
-				outer.style.webkitTransform = 'translate3d(' + (-self.idx * scale + self.offsetX) + 'px, 0, 0)';
-				outer.style.webkitTransition = 'none';
-
-			};
-
-			var endHandler = function (evt) {
-
-				// 判断是否切换
-				var boundary = scale / 6;
-
-				var endTime = new Date() * 1;
-
-//				var lis = document.getElementsByTagName('li');
-
-				if(endTime - self.startTime < 250) {
-					if(self.offsetX > 50) {
-						self.go('-1', 'prev');
-					}
-					else if(self.offsetX < -50) {
-						self.go('+1', 'next');
-					}
-					else {
-						self.go('0', 'current');
-					}
+				if($this.idx == len - 1) {
+					$this.idx = 0;
+					isFirst = false;
 				}
+				/*else if($this.idx == 0 && !isFirst) {
+					$this.idx = len - 1;
+					isFirst = true;
+				}*/
 				else {
-					if(self.offsetX >= boundary) {
-						// 进入上一页
-						self.go('-1', 'prev');
-
-					}
-					else if (self.offsetX < -boundary) {
-						// 进入下一页
-						self.go('+1', 'next');
-					}
-					else {
-						// 留在当前页
-						self.go('0', 'current');
-					}
+					$this.idx ++;
 				}
 
-			};
-
-			outer.addEventListener('touchstart', startHandler);
-			outer.addEventListener('touchmove', moveHandler);
-			outer.addEventListener('touchend', endHandler);
-		};
-
-		Slider.prototype.getDirection = function (type) {
-			var direction = 0;
-
-			switch (type) {
-				case 'prev':
-					direction = +1;
-					break;
-				case 'next':
-					direction = -1;
-					break;
-				case 'current':
-					direction = 1;
-					break;
-			}
-
-			return direction;
-		};
-
-		Slider.prototype.go = function (num, type) {
-			var self = this,
-					outer = self.outer[0],
-					lis = outer.getElementsByClassName('swipe-item'),
-					len = lis.length,
-					idx = self.idx,
-					cidx = 0,
-					scale = self.scaleW,
-					direction   = self.getDirection(type) * 1,
-					moveOffsetX = 0;
-
-			console.log(direction)
-
-			// 根据num判断是上一页、下一页、当前
-			// 如果是数字，就直接跳到第num页
-			if(typeof num == 'number') {
-				cidx = idx;
-			}
-			else if(typeof num == 'string') {
-				cidx = idx + num * 1;
-			}
-
-			// 判断是否溢出
-			if (cidx < 0) {
-				cidx = 0;
-			}
-			else if (cidx > len - 1) {
-				cidx = len - 1;
-			}
-
-			moveOffsetX = -self.idx * scale;
-
-			self.idx = cidx;
-
-			outer.style.webkitTransition = '-webkit-transform 0.2s ease-out';
-			outer.style.webkitTransform = 'translate3d(' + (-self.idx * scale) + 'px, 0, 0)';
-
+			}, seconds);
 		};
 
 		new Slider({
 			'dom': document.getElementById('canvas'),
 			'list': listImg,
-			'type': 2
+			'type': 2,
+			'pagination': 'swipe-pagination',
+//			'loop':true
 		})
 	</script>
 </body>
