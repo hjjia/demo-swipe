@@ -5,6 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
 	<meta name="apple-touch-fullscreen" content="yes" />
 	<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+	<link href="swipe-app.css" rel="stylesheet">
 	<title>web app swiper demo</title>
 	<style>
 		body {
@@ -22,7 +23,7 @@
 			box-sizing: border-box;
 		}
 
-		#canvas {
+		.swipe-container{
 			position: relative;
 
 			width: 100%;
@@ -69,111 +70,17 @@
                 !*background-color: #fff;*!
             }*/
 
-		#canvas .swipe-wrapper {
-			position: relative;
-
-			display: -webkit-box;
-			display: -moz-box;
-			display: -ms-flexbox;
-			display: -webkit-flex;
-			display: flex;
-
-			-webkit-transition-property: -webkit-transform;
-			-moz-transition-property: -moz-transform;
-			-o-transition-property: -o-transform;
-			-ms-transition-property: -ms-transform;
-			transition-property: transform;
-
-			width: 100%;
-			/*height: 100%;*/
-
-			margin: 0;
-			padding: 0;
-
-			list-style: none;
-		}
-
 		#canvas .swipe-wrapper .swipe-item {
-			position: relative;
-			display: -webkit-box;
-			display: -moz-box;
-			display: -ms-flexbox;
-			display: -webkit-flex;
-			display: flex;
-
-			webkit-flex-shrink: 0;
-			-ms-flex: 0 0 auto;
-			flex-shrink: 0;
-
-			width: 100%;
-			height: 100%;
-
 			border: 1px solid yellow;
-
-			-webkit-box-pack: center;
-			-webkit-backface-visibility: hidden;
-
-			-webkit-box-align: center;
-			-ms-flex-align: center;
-			-webkit-align-items: center;
-			align-items: center;
-		}
-
-
-		.swiper-wrapper {
-			position: relative;
-			width: 100%;
-			height: 100%;
-			z-index: 1;
-			display: -webkit-box;
-			display: -moz-box;
-			display: -ms-flexbox;
-			display: -webkit-flex;
-			display: flex;
-			-webkit-transition-property: -webkit-transform;
-			-moz-transition-property: -moz-transform;
-			-o-transition-property: -o-transform;
-			-ms-transition-property: -ms-transform;
-			transition-property: transform;
-			-webkit-box-sizing: content-box;
-			-moz-box-sizing: content-box;
-			box-sizing: content-box;
 		}
 
 		.swipe-pagination {
-			position: absolute;
-
-			bottom: 10px;
-			right: 0;
-			left: 0;
-
-			text-align: center;
-
 			border: 1px solid red;
-		}
-
-		.swipe-pagination-item {
-			display: inline-block;
-			vertical-align: middle;
-
-			width: 10px;
-			height: 10px;
-
-			border-radius: 50%;
-
-			margin: 0 5px;
-
-			background-color: #fff;
-			opacity: 0.6;
-		}
-
-		.swipe-pagination-item.active {
-			opacity: 1;
 		}
 	</style>
 </head>
 <body>
-<div id="canvas">
+<div class="swipe-container" id="canvas">
 	<!--<ul class="swipe-wrapper" style="">
 		<li class="swipe-item" >
 			<div class="div-img" >
