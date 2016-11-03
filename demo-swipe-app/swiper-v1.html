@@ -1,0 +1,529 @@
+<!doctype html>
+<html>
+<head lang="en">
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+	<meta name="apple-touch-fullscreen" content="yes" />
+	<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+	<title>web app swiper demo</title>
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+
+			background-color: #333;
+
+			overflow: hidden;
+		}
+
+		* {
+			-webkit-box-sizing: border-box;
+			-moz-box-sizing: border-box;
+			box-sizing: border-box;
+		}
+
+		#canvas {
+			position: relative;
+
+			width: 100%;
+			height: 100%;
+
+			overflow: hidden;
+		}
+
+		.div-img {
+			width: 100%;
+			/*height: 400px;*/
+
+			line-height: 500px;
+			text-align: center;
+
+			background-color: #fff;
+		}
+
+		ul {
+			height: 568px;
+		}
+
+	/*	#canvas ul, li {
+			width: 100%;
+			height: 100%;
+			
+			margin: 0;
+			padding: 0;
+
+			list-style: none;
+
+			overflow: hidden;
+		}
+
+		li {
+			position: absolute;
+			display: -webkit-box;
+			-webkit-box-pack: center;
+			-webkit-box-align: center;
+			-webkit-backface-visibility: hidden;
+
+			width: 100%;
+
+			!*background-color: #fff;*!
+		}*/
+
+		#canvas .swipe-wrapper {
+			position: relative;
+
+			display: -webkit-box;
+			display: -moz-box;
+			display: -ms-flexbox;
+			display: -webkit-flex;
+			display: flex;
+
+			-webkit-transition-property: -webkit-transform;
+			-moz-transition-property: -moz-transform;
+			-o-transition-property: -o-transform;
+			-ms-transition-property: -ms-transform;
+			transition-property: transform;
+
+			width: 100%;
+			/*height: 100%;*/
+
+			margin: 0;
+			padding: 0;
+
+			list-style: none;
+		}
+
+		#canvas .swipe-wrapper .swipe-item {
+			position: relative;
+			display: -webkit-box;
+			display: -moz-box;
+			display: -ms-flexbox;
+			display: -webkit-flex;
+			display: flex;
+
+			webkit-flex-shrink: 0;
+			-ms-flex: 0 0 auto;
+			flex-shrink: 0;
+
+			width: 100%;
+			height: 100%;
+
+			border: 1px solid yellow;
+
+			-webkit-box-pack: center;
+			-webkit-backface-visibility: hidden;
+
+			-webkit-box-align: center;
+			-ms-flex-align: center;
+			-webkit-align-items: center;
+			align-items: center;
+		}
+
+
+		.swiper-wrapper {
+			position: relative;
+			width: 100%;
+			height: 100%;
+			z-index: 1;
+			display: -webkit-box;
+			display: -moz-box;
+			display: -ms-flexbox;
+			display: -webkit-flex;
+			display: flex;
+			-webkit-transition-property: -webkit-transform;
+			-moz-transition-property: -moz-transform;
+			-o-transition-property: -o-transform;
+			-ms-transition-property: -ms-transform;
+			transition-property: transform;
+			-webkit-box-sizing: content-box;
+			-moz-box-sizing: content-box;
+			box-sizing: content-box;
+		}
+
+		.swipe-pagination {
+			position: absolute;
+
+			bottom: 10px;
+			right: 0;
+			left: 0;
+
+			text-align: center;
+
+			border: 1px solid red;
+		}
+
+		.swipe-pagination-item {
+			display: inline-block;
+			vertical-align: middle;
+
+			width: 10px;
+			height: 10px;
+
+			border-radius: 50%;
+
+			margin: 0 5px;
+
+			background-color: #fff;
+			opacity: 0.6;
+		}
+
+		.swipe-pagination-item.active {
+			opacity: 1;
+		}
+	</style>
+</head>
+<body>
+	<div id="canvas">
+		 <ul class="swipe-wrapper" style="">
+			<li class="swipe-item" >
+				<div class="div-img" >
+					swiper 1
+				</div>
+			</li>
+		
+			<li class="swipe-item">
+				<div class="div-img">
+					swiper 2
+				</div>
+			</li>
+		
+			<li class="swipe-item">
+				<div class="div-img">
+					swiper 3
+				</div>
+			</li>
+		</ul>
+		<div class="swipe-pagination"></div>
+	</div>
+
+	
+	<script type="text/javascript">
+
+		var listImg = [
+			{
+				width: 900,
+				height: 400,
+				img: 'img/2.jpg'
+			},
+			{
+				width: 500,
+				height: 765,
+				img: 'img/3.jpg'
+			},
+			{
+				width: 754,
+				height: 356,
+				img: 'img/4.jpg'
+			},
+			{
+				width: 378,
+				height: 765,
+				img: 'img/5.jpg'
+			},
+			{
+				width: 789,
+				height: 780,
+				img: 'img/6.jpg'
+			},
+			{
+				width: 900,
+				height: 765,
+				img: 'img/7.jpg'
+			},
+		]
+
+		// create controductor function
+		function Slider(opts) {
+			this.wrap       = opts.dom;
+			this.list       = opts.list;
+			this.type       = opts.type || 1;
+			this.pagination = opts.pagination;
+			this.loop       = opts.loop;
+			this.seconds    = opts.seconds || 1000;
+
+			// initialize some variables
+			this.init();
+
+			// render DOM Tree
+			this.renderDOM();
+
+			// all logic methods and shift slide functions
+			this.bindDOM();
+
+		}
+
+		/**
+		 * initialize some variables
+		 */
+		Slider.prototype.init = function () {
+			// calculate the radio of the view
+			this.radio = window.innerHeight / window.innerWidth;
+
+			// the width of every slide
+			this.scaleW = window.innerWidth;
+
+			// the index of the current swipe-item
+			this.idx = 0; 
+
+		};
+
+		/**
+		 * render DOM Tree
+		 * this.type = 1: render swipe HTML dynamic
+		 * this.type = 2: swipe HTML has been existed
+		 */
+		Slider.prototype.renderDOM = function () {
+
+			var $wrap = this.wrap,
+				data  = this.list,
+				len   = data.length,
+				scale = this.scaleW;
+
+			switch (this.type) {
+				case 1:
+						this._renderCreateDOM(data);
+					break;
+				case 2 :
+				default:
+					this.outer = $wrap.getElementsByClassName('swipe-wrapper')[0];
+			}
+
+			// create paiginations
+			if(this.pagination) {
+				this._createPagination(this.pagination);
+			}
+		};
+
+		/**
+		 * all logic methods and shift slide functions
+		 */
+		Slider.prototype.bindDOM = function () {
+			var $this  = this,
+				data   = $this.list,
+				len    = data.length,
+				scale  = $this.scaleW,
+				$outer = $this.outer,
+				lis    = $outer.getElementsByClassName('swipe-item');
+
+			// if loop
+			$this.loop && ($this.setLoop());
+
+			var startHandler = function (evt) {
+
+				// 记录当前手指的位移
+				$this.startX = evt.touches[0].pageX;
+				$this.startY = evt.touches[0].pageY;
+
+				$this.offsetX = 0;
+
+				$this.startTime = new Date() * 1;
+			};
+
+			var moveHandler = function (evt) {
+				evt.preventDefault(); // 阻止浏览器的默认事件 如果 切换到下一页
+
+				$this.offsetX = evt.touches[0].pageX - $this.startX;
+
+				$outer.style.webkitTransform = 'translate3d(' + (-$this.idx * scale + $this.offsetX) + 'px, 0, 0)';
+				$outer.style.webkitTransition = 'none';
+
+			};
+
+			var endHandler = function (evt) {
+
+				// 判断是否切换
+				var boundary = scale / 6,
+					endTime  = new Date() * 1;
+
+				// slide quickly
+				if(endTime - $this.startTime < 250) {
+					if($this.offsetX > 50) {
+						$this.go('-1', 'prev');
+					}
+					else if($this.offsetX < -50) {
+						$this.go('+1', 'next');
+					}
+					else {
+						$this.go('0', 'current');
+					}
+				}
+				else {
+					if($this.offsetX >= boundary) {
+
+						// prev
+						$this.go('-1', 'prev');
+
+					}
+					else if ($this.offsetX < -boundary) {
+
+						// next
+						$this.go('+1', 'next');
+					}
+					else {
+
+						// current
+						$this.go('0', 'current');
+					}
+				}
+
+			};
+
+			$outer.addEventListener('touchstart', startHandler);
+			$outer.addEventListener('touchmove', moveHandler);
+			$outer.addEventListener('touchend', endHandler);
+		};
+
+		Slider.prototype.go = function (num, type) {
+			var self        = this,
+				outer       = self.outer,
+				lis         = outer.getElementsByClassName('swipe-item'),
+				len         = lis.length,
+				idx         = self.idx,
+				cidx        = 0,
+				scale       = self.scaleW,
+				direction   = type && self.getDirection(type) * 1,
+				moveOffsetX = 0,
+				$pagination,
+				i           = 0;
+
+			self.pagination && ($pagination = self.wrap.getElementsByClassName(self.pagination)[0].getElementsByClassName('swipe-pagination-item'));
+
+			// 根据num判断是上一页、下一页、当前
+			// 如果是数字，就直接跳到第num页
+			if(typeof num == 'number') {
+				cidx = idx;
+			}
+			else if(typeof num == 'string') {
+				cidx = idx + num * 1;
+			}
+
+			// 判断是否溢出
+			if (cidx < 0) {
+				cidx = 0;
+			}
+			else if (cidx > len - 1) {
+				cidx = len - 1;
+			}
+
+			moveOffsetX = -self.idx * scale;
+
+			self.idx = cidx;
+
+			outer.style.webkitTransition = '-webkit-transform 0.2s ease-out';
+			outer.style.webkitTransform = 'translate3d(' + (-self.idx * scale) + 'px, 0, 0)';
+
+			//
+			for(i = 0; i < $pagination.length; i ++ ) {
+				$pagination[i].className = 'swipe-pagination-item';
+				$pagination[cidx].className = 'swipe-pagination-item active';
+			}
+		};
+
+		Slider.prototype._setDomPosition = function () {
+
+		};
+
+		Slider.prototype.getDirection = function (type) {
+			var direction = 0;
+
+			switch (type) {
+				case 'prev':
+					direction = +1;
+					break;
+				case 'next':
+					direction = -1;
+					break;
+				case 'current':
+					direction = 1;
+					break;
+			}
+
+			return direction;
+		};
+
+		Slider.prototype._renderCreateDOM = function (imgArr) {
+			var len   = imgArr.length,
+				data  = imgArr,
+				scale = this.scaleW,
+				wrap  = this.wrap;
+
+			this.outer = document.createElement('ul');
+
+			for(var i = 0; i < len; i++) {
+				var li = document.createElement('li');
+				var item = data[i];
+
+				li.className = 'swipe-item';
+				li.style.width = scale + 'px';
+
+				if(item) {
+					if(item['height'] / item['width'] > this.radio) {
+						li.innerHTML = '<div class="div-img" style="height:' + window.innerHeight + ';"> '+ item.img + ' </div>'
+					}
+					else {
+						li.innerHTML = '<div class="div-img" style="width:' + window.innerWidth + ';">' + item.img + '</div>';
+					}
+				}
+				this.outer.appendChild(li);
+			}
+
+			this.outer.className = "swipe-wrapper";
+			this.outer.style.width = scale + 'px';
+
+			wrap.style.height = window.innerHeight + 'px';
+			wrap.appendChild(this.outer);
+		};
+
+		Slider.prototype._createPagination = function (pagination) {
+			var self        = this,
+				outer       = self.outer,
+				lis         = outer.getElementsByClassName('swipe-item'),
+				len         = lis.length,
+				$pagination = self.wrap.getElementsByClassName(pagination)[0],
+				i           = 0;
+
+			for(i = 0; i < len; i ++) {
+				var bullet = document.createElement('span');
+
+				bullet.className = 'swipe-pagination-item';
+				bullet.setAttribute('data-slide-index',i);
+
+				i == 0 && (bullet.className = 'swipe-pagination-item active');
+				$pagination.appendChild(bullet);
+			}
+		};
+
+		Slider.prototype.setLoop = function () {
+			var $this   = this,
+				seconds = $this.seconds,
+				len     = $this.outer.getElementsByClassName('swipe-item').length,
+				isFirst = true;
+
+			setInterval(function () {
+				$this.go($this.idx);
+
+				if($this.idx == len - 1) {
+					$this.idx = 0;
+					isFirst = false;
+				}
+				/*else if($this.idx == 0 && !isFirst) {
+					$this.idx = len - 1;
+					isFirst = true;
+				}*/
+				else {
+					$this.idx ++;
+				}
+
+			}, seconds);
+		};
+
+		new Slider({
+			'dom': document.getElementById('canvas'),
+			'list': listImg,
+			'type': 2,
+			'pagination': 'swipe-pagination',
+//			'loop':true
+		})
+	</script>
+</body>
+</html>
